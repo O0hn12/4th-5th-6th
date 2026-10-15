@@ -567,6 +567,28 @@ th {
   <div id="allScoresResult" style="margin-top:10px;"></div>
 </div>
 
+    <!-- تقرير المدرسة -->
+<div class="card">
+  <h3>🏫 تقرير المدرسة</h3>
+
+  <label for="schoolReportName">اختر المدرسة</label>
+  <select id="schoolReportName">
+    <option value="">-- اختر المدرسة --</option>
+    <option value="الفرنسيسكان">الفرنسيسكان</option>
+    <option value="النقراشى">النقراشى</option>
+    <option value="الاصلاح">الاصلاح</option>
+    <option value="الاقباط">الاقباط</option>
+    <option value="المشتركة">المشتركة</option>
+    <option value="التجريبية">التجريبية</option>
+  </select>
+
+  <button id="showSchoolReport" class="submit-btn">
+    عرض تقرير المدرسة
+  </button>
+
+  <div id="schoolReportResult" style="margin-top:10px;"></div>
+</div>
+
 </section>
 
     <section id="addEditSection" class="section">
@@ -596,8 +618,15 @@ th {
 <label>اليوم:</label>
 <select id="ae_day"></select><br>
 
-    <label>المدرسة:</label>
-    <input id="ae_school" type="text"><br>
+<select id="ae_school" class="select-box" required>
+  <option value="">-- اختر المدرسة --</option>
+  <option value="الفرنسيسكان">الفرنسيسكان</option>
+  <option value="النقراشى">النقراشى</option>
+  <option value="الاصلاح">الاصلاح</option>
+  <option value="الاقباط">الاقباط</option>
+  <option value="المشتركة">المشتركة</option>
+  <option value="التجريبية">التجريبية</option>
+</select>
 
     <label>السنة الدراسية:</label>
     <input id="ae_schoolYear" type="text"><br>
@@ -2535,6 +2564,84 @@ document.getElementById("showAllScoresBtn").addEventListener("click", async () =
     box.innerHTML = "❌ حصل خطأ أثناء تحميل التقرير";
   }
 });
+
+    
+document.getElementById("showSchoolReport").addEventListener("click", async function () {
+  const schoolSelect = document.getElementById("schoolReportName");
+  const resultDiv = document.getElementById("schoolReportResult");
+  const school = schoolSelect.value;
+
+  if (!school) {
+    resultDiv.textContent = "من فضلك اختر المدرسة أولًا.";
+    return;
+  }
+
+  resultDiv.textContent = "جاري تحميل التقرير...";
+
+  try {
+    const url = `${scriptURL}?type=schoolReport&school=${encodeURIComponent(school)}`;
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (!data.success) {
+      resultDiv.textContent = data.error || "حصل خطأ أثناء تحميل التقرير.";
+      return;
+    }
+
+    if (!data.records || data.records.length === 0) {
+      resultDiv.textContent = `مفيش أطفال مسجلين في مدرسة ${school}.`;
+      return;
+    }
+
+    let html = `
+      <h4>تقرير مدرسة ${school}</h4>
+      <p>عدد الأطفال: <strong>${data.count}</strong></p>
+      <table style="width:100%; border-collapse:collapse;">
+        <thead>
+          <tr>
+            <th style="border:1px solid #ccc;padding:8px;">م</th>
+            <th style="border:1px solid #ccc;padding:8px;">اسم الطفل</th>
+            <th style="border:1px solid #ccc;padding:8px;">الفرقة</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+
+    data.records.forEach((child, index) => {
+      const safeName = String(child.name)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+
+      const safeGroup = String(child.group)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+
+      html += `
+        <tr>
+          <td style="border:1px solid #ccc;padding:8px;">${index + 1}</td>
+          <td style="border:1px solid #ccc;padding:8px;">${safeName}</td>
+          <td style="border:1px solid #ccc;padding:8px;">${safeGroup}</td>
+        </tr>
+      `;
+    });
+
+    html += `
+        </tbody>
+      </table>
+    `;
+
+    resultDiv.innerHTML = html;
+
+  } catch (error) {
+    console.error("School report error:", error);
+    resultDiv.textContent = "حصل خطأ في الاتصال. حاول مرة تانية.";
+  }
+});
+
 </script>
 </body>
 </html>
