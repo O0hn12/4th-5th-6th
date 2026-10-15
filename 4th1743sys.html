@@ -2518,6 +2518,7 @@ document.getElementById("showAllScoresBtn").addEventListener("click", async () =
 });
 
     
+
 document.getElementById("showSchoolReport").addEventListener("click", async function () {
   const schoolSelect = document.getElementById("schoolReportName");
   const resultDiv = document.getElementById("schoolReportResult");
@@ -2531,7 +2532,7 @@ document.getElementById("showSchoolReport").addEventListener("click", async func
   resultDiv.textContent = "جاري تحميل التقرير...";
 
   try {
-    const url = `${scriptURL}?type=schoolReport&school=${encodeURIComponent(school)}`;
+    const url = `${apiURL}?type=schoolReport&school=${encodeURIComponent(school)}`;
     const response = await fetch(url);
     const data = await response.json();
 
@@ -2545,52 +2546,52 @@ document.getElementById("showSchoolReport").addEventListener("click", async func
       return;
     }
 
-    let html = `
-      <h4>تقرير مدرسة ${school}</h4>
-      <p>عدد الأطفال: <strong>${data.count}</strong></p>
-      <table style="width:100%; border-collapse:collapse;">
-        <thead>
-          <tr>
-            <th style="border:1px solid #ccc;padding:8px;">م</th>
-            <th style="border:1px solid #ccc;padding:8px;">اسم الطفل</th>
-            <th style="border:1px solid #ccc;padding:8px;">الفرقة</th>
-          </tr>
-        </thead>
-        <tbody>
-    `;
+    const table = document.createElement("table");
+    table.style.cssText = "width:100%;border-collapse:collapse;margin-top:10px;";
 
-    data.records.forEach((child, index) => {
-      const safeName = String(child.name)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
+    const thead = document.createElement("thead");
+    const headerRow = document.createElement("tr");
 
-      const safeGroup = String(child.group)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
-
-      html += `
-        <tr>
-          <td style="border:1px solid #ccc;padding:8px;">${index + 1}</td>
-          <td style="border:1px solid #ccc;padding:8px;">${safeName}</td>
-          <td style="border:1px solid #ccc;padding:8px;">${safeGroup}</td>
-        </tr>
-      `;
+    ["م", "اسم الطفل", "الفرقة"].forEach(title => {
+      const th = document.createElement("th");
+      th.textContent = title;
+      th.style.cssText = "border:1px solid #ccc;padding:8px;";
+      headerRow.appendChild(th);
     });
 
-    html += `
-        </tbody>
-      </table>
-    `;
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
 
-    resultDiv.innerHTML = html;
+    const tbody = document.createElement("tbody");
+
+    data.records.forEach((child, index) => {
+      const row = document.createElement("tr");
+
+      [index + 1, child.name, child.group].forEach(value => {
+        const td = document.createElement("td");
+        td.textContent = value ?? "";
+        td.style.cssText = "border:1px solid #ccc;padding:8px;";
+        row.appendChild(td);
+      });
+
+      tbody.appendChild(row);
+    });
+
+    table.appendChild(tbody);
+
+    resultDiv.replaceChildren();
+
+    const heading = document.createElement("h4");
+    heading.textContent = `تقرير مدرسة ${school}`;
+
+    const count = document.createElement("p");
+    count.textContent = `عدد الأطفال: ${data.count}`;
+
+    resultDiv.append(heading, count, table);
 
   } catch (error) {
     console.error("School report error:", error);
-    resultDiv.textContent = "حصل خطأ في الاتصال. حاول مرة تانية.";
+    resultDiv.textContent = "❌ لم يتم الاتصال بالخادم.";
   }
 });
 
